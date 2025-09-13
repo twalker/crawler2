@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/url"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -30,4 +31,29 @@ func getFirstParagraphFromHTML(html string) (paragraphText string) {
 		return ""
 	}
 	return strings.TrimSpace(p.Text())
+}
+
+func getURLsFromHTML(htmlBody string, baseURL *url.URL) ([]string, error) {
+	var urls []string
+	r := strings.NewReader(htmlBody)
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return nil, err
+	}
+	doc.Find("a,img").Each(func(i int, s *goquery.Selection) {
+		if a, ok := s.Attr("src"); ok {
+			urls = append(urls, a)
+		}
+		if a, ok := s.Attr("href"); ok {
+			urls = append(urls, a)
+		}
+	})
+
+	for i, u := range urls {
+		if !strings.HasPrefix(u, "http") {
+			urls[i] = baseURL.String() + u
+		}
+	}
+
+	return urls, nil
 }
